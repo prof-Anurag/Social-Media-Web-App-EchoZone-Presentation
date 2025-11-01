@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoZone Presentation</title>
+    <!-- 1. ADD three.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- 2. ADD Google Font for Logo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            /* 3. Set base dark background */
+            background: #150245;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* 4. REMOVED Original Animated Background CSS */
+        /* 5. ADD #bg-canvas CSS */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Sit behind the sidebar and content */
+        }
+
+        /* Sidebar Menu */
+        .sidebar {
+            width: 280px;
+            background: rgba(23, 6, 86, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 30px 30px; 
+            display: flex;
+            flex-direction: column;
+            gap: 10px; 
+            box-shadow: 5px 0 30px rgba(62, 22, 224, 0.5);
+            z-index: 10; /* Sidebar sits on top of canvas */
+            overflow-y: auto;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+        }
+
+        /* 6. UPDATED LOGO H3 */
+        .logo h3 {
+            font-family: 'Pacifico', cursive; /* Use new font */
+            color: rgb(255, 255, 255); /* Keep white on dark sidebar */
+            font-size: 2.2em; /* Make it a bit bigger */
+            text-shadow: 0 0 5px rgba(255, 100, 100, 0.7), 0 0 10px rgba(255, 100, 100, 0.5); /* Red glow */
+            /* Removed background-clip properties */
+        }
+
+        .menu-btn {
+            background: transparent;
+            color: whitesmoke;
+            border: none;
+            padding: 15px;
+            font-size: 1.05em;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: transparent;
+            transform: none; 
+            color: rgb(255, 255, 255);
+        }
+
+        .menu-btn.active {
+            background: rgba(7, 238, 57, 0.8);
+            color: white;
+            border-color: transparent;
+            box-shadow: none;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+            z-index: 2; /* Content sits on top of canvas */
+        }
+
+        /* 7. REVERT SLIDE CONTAINER (white) */
+        .slide-container {
+            width: 100%;
+            height: 100%;
+            max-width: 1400px;
+            
+            /* Revert to white background */
+            background-color: rgba(250, 250, 250, 0.98); 
+            
+            background-image: none;
+
+            border-radius: 30px;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+            padding: 50px 60px;
+            display: none;
+            animation: slideIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border: 3px solid rgba(255, 255, 255, 0.5); /* Lighter border */
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide-container.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .slide-container::before {
+           display: none;
+        }
+
+        .slide-content {
+            position: relative;
+            z-index: 2;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        /* Custom Scrollbar */
+        .slide-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .slide-content::-webkit-scrollbar-track {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+        }
+
+        .slide-content::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+        }
+
+        h1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 4.5em;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 900;
+            animation: glow 2s ease-in-out infinite alternate;
+            line-height: 1.2;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.3)); }
+            to { filter: drop-shadow(0 0 40px rgba(118, 75, 162, 0.6)); }
+        }
+
+        /* 8. REVERT TEXT COLORS (dark) */
+        h2 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 3em;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 4px solid;
+            border-image: linear-gradient(90deg, #667eea, #764ba2) 1;
+            font-weight: 800;
+        }
+
+        h3 {
+            color: #764ba2; /* Reverted */
+            font-size: 1.6em;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        p, li {
+            font-size: 1.2em;
+            line-height: 1.7;
+            color: #334155; /* Reverted */
+            margin-bottom: 15px;
+        }
+
+        .center-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 2em;
+            color: #764ba2; /* Reverted */
+            margin-top: 25px;
+            font-weight: 700;
+        }
+
+        .icon-display {
+            font-size: 8em;
+            margin-bottom: 30px;
+            animation: bounce 3s ease-in-out infinite;
+            filter: drop-shadow(0 10px 30px rgba(102, 126, 234, 0.4));
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%); /* Reverted */
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            color: #1e3c72; /* Reverted */
+        }
+
+        /* 9. PRESENTER STYLES (3D flip) */
+        .presenter-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-top: 50px;
+            width: 100%;
+        }
+        .presenter-card {
+            background: transparent;
+            border: none;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: none;
+            perspective: 1000px;
+            padding: 0;
+            min-height: 220px;
+            cursor: pointer;
+        }
+
+        .presenter-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .presenter-card:hover .presenter-card-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .presenter-card-front,
+        .presenter-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden; /* Safari */
+            backface-visibility: hidden;
+            
+            /* Reverted card styles (light theme) */
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(240, 147, 251, 0.1) 100%);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 30px;
+            transition: all 0.3s ease;
+        }
+        
+        .presenter-card:hover .presenter-card-front,
+        .presenter-card:hover .presenter-card-back {
+            border-color: #667eea;
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .presenter-card-back {
+            transform: rotateY(180deg);
+        }
+
+        .presenter-card h3 {
+            font-size: 2em;
+            margin-bottom: 15px;
+            color: #764ba2; /* Reverted */
+            user-select: none;
+        }
+        .presenter-card p {
+            font-size: 1.3em;
+            color: #334155; /* Reverted */
+            font-weight: 600;
+            user-select: none;
+        }
+        /* --- END UPDATED STYLES --- */
+
+
+        .grid-features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            margin: 30px 0;
+        }
+        
+        /* 10. REVERT FEATURE CARD (light) */
+        .feature-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(240, 147, 251, 0.1) 100%);
+            padding: 30px;
+            border-radius: 20px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px); 
+            box-shadow: 0 20px 50px rgba(102, 126, 234, 0.4); 
+            border-color: #667eea; 
+        }
+
+        .feature-card h3,
+        .feature-card p {
+            position: relative;
+            z-index: 1;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin: 40px 0;
+        }
+
+        .tech-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 35px 25px;
+            border-radius: 20px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.3em;
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            animation: techPop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) backwards;
+        }
+
+        .tech-item:nth-child(1) { animation-delay: 0.1s; }
+        .tech-item:nth-child(2) { animation-delay: 0.2s; }
+        .tech-item:nth-child(3) { animation-delay: 0.3s; }
+        .tech-item:nth-child(4) { animation-delay: 0.4s; }
+        .tech-item:nth-child(5) { animation-delay: 0.5s; }
+        .tech-item:nth-child(6) { animation-delay: 0.6s; }
+
+        @keyframes techPop {
+            from {
+                opacity: 0;
+                transform: scale(0.3) rotate(-15deg);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        .tech-item:hover {
+            transform: translateY(-15px) scale(1.05) rotate(2deg);
+            box-shadow: 0 20px 50px rgba(102, 126, 234, 0.6);
+        }
+        
+        /* 11. REVERT INFO BOX (light) */
+        .info-box {
+            background: linear-gradient(135deg, rgba(168, 237, 234, 0.2) 0%, rgba(254, 214, 227, 0.2) 100%);
+            border-left: 6px solid #667eea;
+            padding: 25px 30px;
+            margin: 20px 0;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .flow-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 40px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .flow-step {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 35px;
+            border-radius: 20px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.2em;
+            min-width: 200px;
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+            animation: flowSlide 0.6s ease backwards;
+            position: relative;
+        }
+
+        .flow-step:nth-child(1) { animation-delay: 0.2s; }
+        .flow-step:nth-child(3) { animation-delay: 0.4s; }
+        .flow-step:nth-child(5) { animation-delay: 0.6s; }
+
+        @keyframes flowSlide {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .flow-arrow {
+            font-size: 3em;
+            color: #667eea;
+            animation: arrowPulse 2s ease-in-out infinite;
+            font-weight: bold;
+        }
+
+        @keyframes arrowPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.3); }
+        }
+
+        .split-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+            margin: 30px 0;
+        }
+
+        .visual-element {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 25px;
+            padding: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 6em;
+            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.5);
+            animation: pulse 3s ease-in-out infinite;
+            min-height: 300px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .architecture-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .arch-layer {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(240, 147, 251, 0.15) 100%);
+            padding: 25px 35px;
+            border-radius: 15px;
+            border-left: 6px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .arch-layer:hover {
+            transform: translateX(15px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .arch-arrow {
+            text-align: center;
+            font-size: 2.5em;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        ul {
+            margin-left: 30px;
+        }
+
+        li {
+            margin-bottom: 15px;
+            position: relative;
+            padding-left: 15px;
+        }
+
+        li::before {
+            content: '▸';
+            position: absolute;
+            left: -15px;
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 200px;
+                padding: 20px 10px;
+            }
+
+            .presenter-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .grid-features {
+                grid-template-columns: 1fr;
+            }
+            
+            .tech-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .split-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 3em;
+            }
+            
+            h2 {
+                font-size: 2.2em;
+            }
+        }
+
+
+    </style>
+</head>
+<body>
+    <!-- 12. REMOVED Original Background Divs -->
+    
+    <!-- 13. ADD the new canvas element -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Sidebar Menu - UPDATED -->
+    <div class="sidebar">
+        <div class="logo">
+            <h3>EchoZone</h3>
+        </div>
+        <button class="menu-btn active" onclick="goToSlide(1)"><span>🧑‍💻</span> Presenters</button>
+        <button class="menu-btn" onclick="goToSlide(2)"><span>🏠</span> Title</button>
+        <button class="menu-btn" onclick="goToSlide(3)"><span>❓</span> What is it</button>
+        <button class="menu-btn" onclick="goToSlide(4)"><span>✨</span> Features</button>
+        <button class="menu-btn" onclick="goToSlide(5)"><span>⚙️</span> How It Works</button>
+        <button class="menu-btn" onclick="goToSlide(6)"><span>🛠️</span> Tech Stack</button>
+        <button class="menu-btn" onclick="goToSlide(7)"><span>👤</span> Anonymous ID</button>
+        <button class="menu-btn" onclick="goToSlide(8)"><span>📍</span> Location Filter</button>
+        <button class="menu-btn" onclick="goToSlide(9)"><span>💬</span> Engagement</button>
+        <button class="menu-btn" onclick="goToSlide(10)"><span>🏗️</span> Architecture</button>
+        <button class="menu-btn" onclick="goToSlide(11)"><span>🙏</span> Thank You</button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Slide 1: Presenters - NEW SLIDE -->
+        <div class="slide-container active">
+            <div class="slide-content">
+                <div class="center-content" style="justify-content: flex-start; padding-top: 20px; text-align: center;">
+                    <h2 style="text-align: center; width: 100%;">🧑‍💻 Meet the Team Members</h2>
+                    <div class="presenter-grid">
+                        <div class="presenter-card">
+                            <div class="presenter-card-inner">
+                                <div class="presenter-card-front">
+                                    <span style="font-size: 4em; line-height: 1;">🧑‍💻</span>
+                                    <p style="font-size: 1.3em; color: #334155; font-weight: 600; margin-top: 15px;">Team Member 1</p>
+                                </div>
+                                <div class="presenter-card-back">
+                                    <h3>Member 1 Name</h3>
+                                    <p>Reg: [123456789]</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="presenter-card">
+                            <div class="presenter-card-inner">
+                                <div class="presenter-card-front">
+                                    <span style="font-size: 4em; line-height: 1;">🧑‍💻</span>
+                                    <p style="font-size: 1.3em; color: #334155; font-weight: 600; margin-top: 15px;">Team Member 2</p>
+                                </div>
+                                <div class="presenter-card-back">
+                                    <h3>Member 2 Name</h3>
+                                    <p>Reg: [123456789]</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="presenter-card">
+                            <div class="presenter-card-inner">
+                                <div class="presenter-card-front">
+                                    <span style="font-size: 4em; line-height: 1;">🧑‍💻</span>
+                                    <p style="font-size: 1.3em; color: #334155; font-weight: 600; margin-top: 15px;">Team Member 3</p>
+                                </div>
+                                <div class="presenter-card-back">
+                                    <h3>Member 3 Name</h3>
+                                    <p>Reg: [123456789]</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2: Title - (was Slide 1) -->
+        <div class="slide-container">
+            <div class="slide-content">
+                <div class="center-content">
+                    <div class="icon-display">🌍</div>
+                    <h1>EchoZone</h1>
+                    <p class="subtitle">Local Social Network (25 KM Radius)</p>
+                    <p class="subtitle" style="font-size: 1.6em; margin-top: 30px;">Share Happy Moments with Your Community</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: What is EchoZone - RE-INSERTED -->
+        <div class="slide-container">
+            <div class="slide-content">
+                <h2>📱 What is EchoZone?</h2>
+                <div class="split-layout">
+                    <div class="visual-element">
+                        📸
+                    </div>
+                    <div>
+                        <p style="font-size: 1.5em; line-height: 1.9; margin-bottom: 30px;">
+                            A <span class="highlight">location-based social networking platform</span> where users can upload images and videos to share happy moments with people in their <span class="highlight">locality (25 KM radius)</span>.
+                        </p>
+                        <div class="info-box">
+                            <h3>🎯 Key Concept</h3>
+                            <p style="font-size: 1.3em;">Think Instagram, but <strong>only for your local community!</strong></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Features - (was Slide 3) -->
+        <div class="slide-container">
+            <div class="slide-content">
+                <h2>✨ Core Features</h2>
+                <div class="grid-features">
+                    <div class="feature-card">
+                        <h3>📍 Location-Based</h3>
+                        <p>Content visible only within <strong>25 KM radius</strong></p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>🎭 Anonymous ID</h3>
+                        <p>Users get <strong>anonymous IDs</strong> for privacy</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>📸 Media Upload</h3>
+                        <p>Upload <strong>images & videos</strong> of happy moments</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>👍 Engagement</h3>
+                        <p><strong>Upvote, downvote, and comment</strong> on posts</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>🔐 Authentication</h3>
+                        <p><strong>Login & Signup</strong> with email and password</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>✉️ Email Verification</h3>
+                        <p>Verify email during <strong>registration</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: How It Works - (was Slide 4) -->
+        <div class="slide-container">
+            <div class="slide-content">
+                <h2>⚙️ How It Works</h2>
+                
+                <div class="info-box">
+                    <h3>Step 1: User Registration</h3>
+                    <div class="flow-container">
+                        <div class="flow-step">Sign Up with Email</div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">Get Anonymous ID</div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">Verify Email</div>
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h3>Step 2: Location Access</h3>
+                    <p>App requests <span class="highlight">location permission</span> → Captures user's coordinates → Uses for content filtering</p>
+                </div>
+                
+                <div class="info-box">
+                    <h3>Step 3: Content Sharing</h3>
+                    <p>Upload <span class="highlight">images/videos</span> → System tags with location → Shows to users within 25 KM</p>
+                </div>
+                
+                <div class="info-box">
+                    <h3>Step 4: Engagement</h3>
+                    <p>Users can <span class="highlight">upvote, downvote, and comment</span> on content from nearby users</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Tech Stack - (was Slide 5) -->
+        <div class="slide-container">
+            <div class="slide-content">
+                <h2>🛠️ Technology Stack</h2>
+                <div class="tech-grid">
+                    <div class="tech-item">☕ Java 21</div>
+                    <div class="tech-item">🍃 Spring Boot</div>
+                    <div class="tech-item">📦 Maven</div>
+                    <div class="tech-item">🟢 Node.js</div>
+                    <div class="tech-item">🗄️ SQL</div>
+                    <div class="tech-item">🐳 Docker</div>
+                </div>
+                <div class="visual-element" style="margin-top: 50px; font-size: 5em;">
+                    🔧
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Anonymous ID - (was Slide 6) -->
+        <div class="slide-container">
+            <div class="slide-content">
+                <h2>🎭 Anonymous ID System</h2>
+                <div class="split-layout">
+                    <div class="visual-element">
+                        👤
+                    </div>
+                    <div>
+                        <div class="info-box">
+                            <h3>Why Anonymous?</h3>
+                            <p>Protects user <span class="highlight">privacy</span> while enabling social interaction</p>
+                        </div>
+                        <div class="info-box">
+                            <h3>How it Works</h3>
+                            <p>Each user receives a <span class="highlight">unique anonymous ID</span> assigned during first registration</p>
+                        </div>
+                        <div class="info-box">
+                            <h3>Benefits</h3>
+                            <p>Share moments freely without revealing <span class="highlight">real identity</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Location Filter - (was Slide 7) -->
+        <div class="slide-container">
+            <div class="slide-content">
+                <h2>📍 Location-Based Filtering</h2>
+                <div class="center-content">
+                    <div class="visual-element" style="width: 100%; max-width: 600px;">
+                        🗺️
+                    </div>
+                    <div class="info-box" style="width: 100%; margin-top: 40px;">
+                        <h3>25 KM Radius Logic</h3>
+                        <p style="font-size: 1.3em;">The app calculates the distance between users and only displays content from users within a <span class="highlight">25 kilometer radius</span></p>
+                    </div>
+                    <div class="split-layout" style="margin-top: 40px; width: 100%;">
+                        <div class="info-box">
+                            <h3>🎯 Process</h3>
+                            <p>Get user location → Calculate distances → Filter content → Display local posts</p>
+                        </div>
+                        <div class="info-box">
+                            <h3>🔒 Privacy</h3>
+                            <p>Exact coordinates <strong>not shared</strong> with others - only used for filtering</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Engagement - (was Slide 8) -->
+        <div class="slide-container">
+            <div class="slide-content">
+                <h2>💬 Engagement Features</h2>
+                <div class="split-layout">
+                    <div>
+                        <div class="info-box">
+                            <h3>👍 Upvote</h3>
+                            <p>Show appreciation for posts you like</p>
+                        </div>
+                        <div class="info-box">
+                            <h3>👎 Downvote</h3>
+                            <p>Express disagreement or flag inappropriate content</p>
+                        </div>
+                        <div class="info-box">
+                            <h3>💭 Comments</h3>
+                            <p>Engage in discussions with your local community</p>
+                        </div>
+                    </div>
+                    <div class="visual-element">
+                        💬
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Architecture - (was Slide 9) -->
+        <div class="slide-container">
+            <div class="slide-content">
+                <h2>🏗️ System Architecture</h2>
+                <div class="architecture-flow">
+                    <div class="arch-layer">
+                        <h3>Frontend Layer</h3>
+                        <p><span class="highlight">Node.js</span> based interface for user interaction</p>
+                    </div>
+                    <div class="arch-arrow">⬇️</div>
+                    <div class="arch-layer">
+                        <h3>Backend Layer</h3>
+                        <p><span class="highlight">Spring Boot + Java 21</span> REST APIs for business logic and location filtering</p>
+                    </div>
+                    <div class="arch-arrow">⬇️</div>
+                    <div class="arch-layer">
+                        <h3>Database Layer</h3>
+                        <p><span class="highlight">SQL Database</span> storing user data, posts, comments, and locations</p>
+                    </div>
+                    <div class="arch-arrow">⬇️</div>
+                    <div class="arch-layer">
+                        <h3>Deployment</h3>
+                        <p><span class="highlight">Docker</span> containerization + <span class="highlight">Maven</span> build management</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Thank You - (was Slide 10) -->
+        <div class="slide-container">
+            <div class="slide-content">
+                <div class="center-content">
+                    <div class="icon-display">🙏</div>
+                    <h1 style="font-size: 5em;">Thank You!</h1>
+                    <div class="info-box" style="margin-top: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                        <h3 style="color: white; font-size: 2.5em;">EchoZone</h3>
+                        <p style="color: white; font-size: 1.6em; margin-top: 20px;">Connecting Communities Locally 🌍</p>
+                    </div>
+                    <p style="margin-top: 60px; font-size: 2em; color: #667eea; font-weight: 700;">Questions?</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 14. REMOVED createParticles() function
+        
+        let currentSlide = 1;
+        const totalSlides = 11; // UPDATED total
+
+        function goToSlide(slideNumber) {
+            // Hide all slides
+            const slides = document.querySelectorAll('.slide-container');
+            slides.forEach(slide => {
+                slide.classList.remove('active');
+            });
+
+            // Show selected slide
+            slides[slideNumber - 1].classList.add('active');
+
+            // Update menu buttons
+            const menuBtns = document.querySelectorAll('.menu-btn');
+            menuBtns.forEach((btn, index) => {
+                btn.classList.remove('active');
+                if (index === slideNumber - 1) {
+                    btn.classList.add('active');
+                }
+            });
+
+            currentSlide = slideNumber;
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                if (currentSlide < totalSlides) {
+                    goToSlide(currentSlide + 1);
+                }
+            }
+            if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                if (currentSlide > 1) {
+                    goToSlide(currentSlide - 1);
+                }
+            }
+        });
+
+        // 15. ADD three.js script
+        let scene, camera, renderer, points;
+
+        function init3DBackground() {
+            const canvas = document.getElementById('bg-canvas');
+            
+            // Scene
+            scene = new THREE.Scene();
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 50; // Move camera back
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 0); // Transparent background
+
+            // Particles
+            const particlesCount = 5000;
+            const positions = new Float32Array(particlesCount * 3);
+            const colors = new Float32Array(particlesCount * 3);
+
+            const color = new THREE.Color();
+
+            for (let i = 0; i < particlesCount; i++) {
+                const i3 = i * 3;
+                
+                // Position (a sphere-like distribution)
+                const radius = Math.random() * 100 + 20;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos((Math.random() * 2) - 1);
+
+                positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+                positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+                positions[i3 + 2] = radius * Math.cos(phi);
+
+                // Color (shades of blue/purple)
+                color.setHSL(Math.random() * 0.2 + 0.6, 0.8, 0.7);
+                colors[i3] = color.r;
+                colors[i3 + 1] = color.g;
+                colors[i3 + 2] = color.b;
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.15,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                opacity: 0.8,
+                sizeAttenuation: true
+            });
+
+            points = new THREE.Points(geometry, material);
+            scene.add(points);
+
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize, false);
+            
+            // Start animation
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Animate particles
+            points.rotation.y += 0.0002;
+            points.rotation.x += 0.0001;
+            
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Initialize
+        init3DBackground(); // 16. ADD function call
+
+    </script>
+</body>
+</html>
+
